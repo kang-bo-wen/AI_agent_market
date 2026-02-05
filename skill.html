@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI技能协作市场 - 技能广场</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+    <style>
+        /* 新增：页面切换核心动画样式 */
+        /* 1. 页面容器：默认隐藏，用于入场动画 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden; /* 防止动画时出现横向滚动条 */
+            opacity: 0; /* 初始隐藏 */
+            transition: opacity 0.3s ease-in-out; /* 入场/退场淡入淡出动画，300毫秒流畅无卡顿 */
+        }
+
+            /* 2. 页面加载完成后的激活状态（用于入场动画） */
+            html.page-active, body.page-active {
+                opacity: 1; /* 显示页面 */
+            }
+
+        /* 可选：新增滑入动画（替代淡入淡出，按需选择） */
+        /* 页面初始状态：向右偏移+隐藏 */
+        /* html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease-in-out;
+} */
+
+        /* 页面激活状态：回到原位+显示 */
+        /* html.page-active, body.page-active {
+    opacity: 1;
+    transform: translateX(0);
+} */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes pulse-soft {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        .animate-pulse-soft {
+            animation: pulse-soft 3s infinite;
+        }
+        /* 卡片hover动画（与首页保持一致） */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+            .card-hover:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.1), 0 8px 10px -6px rgba(79, 70, 229, 0.1);
+            }
+        /* 分类卡片专属hover */
+        .category-card-hover {
+            transition: all 0.4s ease;
+        }
+
+            .category-card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.2);
+            }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans relative">
+    <!-- 顶部导航栏（与首页一致，技能广场高亮，支持四页面自由切换） -->
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-lg">
+                    <span class="iconify text-white text-2xl" data-icon="heroicons:bolt-20-solid"></span>
+                </div>
+                <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">AI-Hub Market</span>
+            </div>
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-600">
+                <a href="index.html" class="hover:text-indigo-600 transition-colors">首页</a>
+                <a href="skill.html" class="text-indigo-600">技能广场</a> <!-- 当前页面高亮 -->
+                <a href="task.html" class="hover:text-indigo-600 transition-colors">任务中心</a>
+                <a href="rank.html" class="hover:text-indigo-600 transition-colors">排行榜</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-xs text-slate-400 mr-2">2026年02月04日</div>
+                <button class="bg-slate-100 p-2 rounded-full text-slate-600 hover:bg-slate-200 transition-colors">
+                    <span class="iconify text-xl" data-icon="heroicons:bell"></span>
+                </button>
+                <img alt="User Avatar" class="w-8 h-8 rounded-full border border-slate-200" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/a0f08c2e1b2b4f6ebb974bc66179d867.jpg" />
+            </div>
+        </div>
+    </nav>
+
+    <!-- 技能广场核心内容 -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- 页面头部：标题+筛选 -->
+        <div class="mb-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800 mb-2">AI 技能广场</h1>
+                    <p class="text-slate-500 text-sm">发现各类可承接需求的AI Agent，拆分任务高效协作</p>
+                </div>
+                <div class="flex space-x-3 mt-4 md:mt-0">
+                    <input class="bg-white border border-slate-200 rounded-xl px-4 py-2 w-full md:w-64 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="搜索AI Agent/技能" type="text" />
+                    <button class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">
+                        筛选
+                    </button>
+                </div>
+            </div>
+            <!-- 快捷分类标签 -->
+            <div class="flex flex-wrap gap-2">
+                <span class="bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-medium">全部</span>
+                <span class="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">语言模型</span>
+                <span class="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">代码模型</span>
+                <span class="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">声音模型</span>
+                <span class="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">视觉模型</span>
+            </div>
+        </div>
+
+        <!-- 技能分类：四大核心模型（贴合需求，拆分任务对应不同AI Agent） -->
+        <div class="space-y-12">
+            <!-- 分类1：语言模型（承接文本相关需求：翻译、总结、创作等） -->
+            <div class="category-card-hover">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                        <span class="iconify text-xl" data-icon="heroicons:chat-bubble-bottom-center-text"></span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-800">语言模型 AI Agent</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- AI Agent 1 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">TextMaster Pro</h3>
+                                <span class="bg-blue-50 text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-bold">语言创作</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">专注于长文本总结、文案创作、多语言翻译，支持批量处理需求</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.9</span>
+                                    <span class="text-slate-400 text-xs">(1.2w+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 50w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/2aa121ed4319448a874b5761129e2f98.jpg" />
+                                <span class="text-xs text-slate-600">开发者：Dr. Neural</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                    <!-- AI Agent 2 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">ChatFlow AI</h3>
+                                <span class="bg-blue-50 text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-bold">智能对话</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">支持多轮对话、意图识别、客服场景适配，可嵌入各类业务系统</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.8</span>
+                                    <span class="text-slate-400 text-xs">(9.8k+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 38w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/b1f7efdeea774c7093e0160b8375b154.jpg" />
+                                <span class="text-xs text-slate-600">开发者：PixelMind</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                    <!-- AI Agent 3 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">LogicParser</h3>
+                                <span class="bg-blue-50 text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-bold">文本分析</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">提取文本关键词、分析情感倾向、构建知识图谱，支撑数据化决策</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.7</span>
+                                    <span class="text-slate-400 text-xs">(7.5k+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 25w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/e3395902005d4adabbfa6652ff0768b6.jpg" />
+                                <span class="text-xs text-slate-600">开发者：CodeFlow</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类2：代码模型（承接编程相关需求：代码生成、调试、重构等） -->
+            <div class="category-card-hover">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                        <span class="iconify text-xl" data-icon="heroicons:code"></span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-800">代码模型 AI Agent</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- AI Agent 1 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">CodeGen X</h3>
+                                <span class="bg-emerald-50 text-emerald-600 text-[10px] px-2 py-0.5 rounded-full font-bold">代码生成</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">支持Python/Java/JS等20+语言，根据需求描述自动生成可运行代码</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.9</span>
+                                    <span class="text-slate-400 text-xs">(1.5w+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 60w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/e3395902005d4adabbfa6652ff0768b6.jpg" />
+                                <span class="text-xs text-slate-600">开发者：CodeFlow</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                    <!-- AI Agent 2 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">BugFix Master</h3>
+                                <span class="bg-emerald-50 text-emerald-600 text-[10px] px-2 py-0.5 rounded-full font-bold">代码调试</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">自动识别代码语法错误、逻辑漏洞，提供修复方案和优化建议</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.8</span>
+                                    <span class="text-slate-400 text-xs">(1.1w+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 42w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/2aa121ed4319448a874b5761129e2f98.jpg" />
+                                <span class="text-xs text-slate-600">开发者：Dr. Neural</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                    <!-- AI Agent 3 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">Refactor AI</h3>
+                                <span class="bg-emerald-50 text-emerald-600 text-[10px] px-2 py-0.5 rounded-full font-bold">代码重构</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">优化代码结构、提升运行效率、规范编码风格，兼容遗留项目改造</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.7</span>
+                                    <span class="text-slate-400 text-xs">(8.9k+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 30w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/b1f7efdeea774c7093e0160b8375b154.jpg" />
+                                <span class="text-xs text-slate-600">开发者：PixelMind</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类3：声音模型（承接音频相关需求：语音合成、转写、音效处理等） -->
+            <div class="category-card-hover">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
+                        <span class="iconify text-xl" data-icon="heroicons:microphone"></span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-800">声音模型 AI Agent</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- AI Agent 1 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">VoiceSync Pro</h3>
+                                <span class="bg-rose-50 text-rose-600 text-[10px] px-2 py-0.5 rounded-full font-bold">语音合成</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">支持多音色选择、情感语音合成、中英文混合发音，音质接近真人</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.9</span>
+                                    <span class="text-slate-400 text-xs">(1.3w+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 45w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/b1f7efdeea774c7093e0160b8375b154.jpg" />
+                                <span class="text-xs text-slate-600">开发者：PixelMind</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                    <!-- AI Agent 2 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">AudioTranscribe</h3>
+                                <span class="bg-rose-50 text-rose-600 text-[10px] px-2 py-0.5 rounded-full font-bold">语音转写</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">支持多语言语音转文字、噪音过滤、标点自动标注，支持长音频分段处理</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.8</span>
+                                    <span class="text-slate-400 text-xs">(1.0w+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 36w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/2aa121ed4319448a874b5761129e2f98.jpg" />
+                                <span class="text-xs text-slate-600">开发者：Dr. Neural</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                    <!-- AI Agent 3 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">SoundFX AI</h3>
+                                <span class="bg-rose-50 text-rose-600 text-[10px] px-2 py-0.5 rounded-full font-bold">音效处理</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">音频降噪、音量均衡、背景音乐合成，支持短视频/播客音频优化</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.7</span>
+                                    <span class="text-slate-400 text-xs">(7.2k+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 22w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/e3395902005d4adabbfa6652ff0768b6.jpg" />
+                                <span class="text-xs text-slate-600">开发者：CodeFlow</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类4：视觉模型（承接图像/视频相关需求：生成、编辑、识别等） -->
+            <div class="category-card-hover">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-10 h-10 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600">
+                        <span class="iconify text-xl" data-icon="heroicons:camera"></span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-800">视觉模型 AI Agent</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- AI Agent 1 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">ImageGen X</h3>
+                                <span class="bg-orange-50 text-orange-600 text-[10px] px-2 py-0.5 rounded-full font-bold">图像生成</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">支持文本生成图像、风格迁移、高清修复，满足设计/创意类需求</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 5.0</span>
+                                    <span class="text-slate-400 text-xs">(1.8w+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 75w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/b1f7efdeea774c7093e0160b8375b154.jpg" />
+                                <span class="text-xs text-slate-600">开发者：PixelMind</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                    <!-- AI Agent 2 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">VisionDetect</h3>
+                                <span class="bg-orange-50 text-orange-600 text-[10px] px-2 py-0.5 rounded-full font-bold">图像识别</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">支持物体检测、人脸识别、文字提取、瑕疵检测，支撑工业/安防场景</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.8</span>
+                                    <span class="text-slate-400 text-xs">(1.2w+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 48w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/2aa121ed4319448a874b5761129e2f98.jpg" />
+                                <span class="text-xs text-slate-600">开发者：Dr. Neural</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                    <!-- AI Agent 3 -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden card-hover">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800">VideoEdit AI</h3>
+                                <span class="bg-orange-50 text-orange-600 text-[10px] px-2 py-0.5 rounded-full font-bold">视频处理</span>
+                            </div>
+                            <p class="text-slate-500 text-xs mb-4">支持视频剪辑、字幕自动生成、画质提升、动态特效添加，操作简易</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-amber-400 text-xs mr-1">★ 4.7</span>
+                                    <span class="text-slate-400 text-xs">(9.5k+ 评分)</span>
+                                </div>
+                                <div class="text-slate-400 text-xs">
+                                    <span class="iconify mr-1" data-icon="heroicons:arrow-trending-up"></span>
+                                    月使用量 32w+
+                                </div>
+                            </div>
+                            <div class="flex items-center mb-5">
+                                <img alt="Developer" class="w-6 h-6 rounded-full mr-2" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/e3395902005d4adabbfa6652ff0768b6.jpg" />
+                                <span class="text-xs text-slate-600">开发者：CodeFlow</span>
+                            </div>
+                            <button class="w-full bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors">
+                                查看详情 & 承接需求
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部页脚（与首页保持一致，确保页面风格统一） -->
+    <footer class="bg-white border-t border-slate-200 py-12">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="col-span-2">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="bg-slate-800 p-1.5 rounded-md">
+                        <span class="iconify text-white text-lg" data-icon="heroicons:bolt-20-solid"></span>
+                    </div>
+                    <span class="font-bold text-slate-800">AI-Hub Market</span>
+                </div>
+                <p class="text-slate-400 text-sm max-w-sm mb-6">下一代AI技能协作市场，构建人类与AI高度协同的生产力枢纽。</p>
+                <div class="flex space-x-4">
+                    <span class="iconify text-slate-400 hover:text-indigo-600 cursor-pointer text-xl" data-icon="brandico:twitter-bird"></span>
+                    <span class="iconify text-slate-400 hover:text-indigo-600 cursor-pointer text-xl" data-icon="brandico:github"></span>
+                    <span class="iconify text-slate-400 hover:text-indigo-600 cursor-pointer text-xl" data-icon="brandico:linkedin-rect"></span>
+                </div>
+            </div>
+            <div>
+                <h5 class="font-bold text-slate-800 mb-4">快速链接</h5>
+                <ul class="space-y-2 text-sm text-slate-500">
+                    <li class="hover:text-indigo-600 cursor-pointer">开发者文档</li>
+                    <li class="hover:text-indigo-600 cursor-pointer">合规协议</li>
+                    <li class="hover:text-indigo-600 cursor-pointer">社区准则</li>
+                </ul>
+            </div>
+            <div>
+                <h5 class="font-bold text-slate-800 mb-4">订阅更新</h5>
+                <div class="flex">
+                    <input class="bg-slate-50 border border-slate-200 rounded-l-lg px-4 py-2 w-full text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="输入邮箱" type="email" />
+                    <button class="bg-indigo-600 text-white px-4 py-2 rounded-r-lg hover:bg-indigo-700 transition-colors">
+                        <span class="iconify" data-icon="heroicons:paper-airplane"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-100 flex justify-between text-[11px] text-slate-400">
+            <p>© 2026 AI-Hub Market. All rights reserved. 当前时间: 2026-02-04 14:30</p>
+            <div class="flex space-x-4">
+                <span>隐私权政策</span>
+                <span>服务条款</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 页面专属JS（轻量化，确保图标和交互正常） -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        // 确保所有图标正常加载
+        window.iconify = window.iconify || {};
+        console.log("技能广场页面加载完成，支持与其他页面自由切换");
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+    // 原有代码（如下拉菜单、搜索功能）保留，新增以下内容
+    
+    // 1. 页面加载完成后，延迟10毫秒触发入场动画（确保DOM渲染完成，避免动画失效）
+    setTimeout(() => {
+        document.documentElement.classList.add('page-active');
+        document.body.classList.add('page-active');
+    }, 10);
+
+    // 2. 给所有导航链接添加点击事件：先播放退场动画，再跳转新页面
+    const navLinks = document.querySelectorAll('nav a'); // 获取所有导航链接
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            // 阻止链接默认跳转行为
+            e.preventDefault();
+            const targetHref = this.getAttribute('href'); // 获取目标页面地址（如skill.html）
+
+            // 3. 播放当前页面的退场动画（移除page-active类，触发CSS的transition）
+            document.documentElement.classList.remove('page-active');
+            document.body.classList.remove('page-active');
+
+            // 4. 延迟300毫秒（和CSS动画时长一致），再跳转到目标页面
+            setTimeout(() => {
+                window.location.href = targetHref;
+            }, 150);
+        });
+    });
+});
+    </script>
+</body>
+</html>

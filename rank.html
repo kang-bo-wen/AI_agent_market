@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI技能协作市场 - 排行榜</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+    <style>
+        /* 新增：页面切换核心动画样式 */
+        /* 1. 页面容器：默认隐藏，用于入场动画 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden; /* 防止动画时出现横向滚动条 */
+            opacity: 0; /* 初始隐藏 */
+            transition: opacity 0.3s ease-in-out; /* 入场/退场淡入淡出动画，300毫秒流畅无卡顿 */
+        }
+
+            /* 2. 页面加载完成后的激活状态（用于入场动画） */
+            html.page-active, body.page-active {
+                opacity: 1; /* 显示页面 */
+            }
+
+        /* 可选：新增滑入动画（替代淡入淡出，按需选择） */
+        /* 页面初始状态：向右偏移+隐藏 */
+        /* html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease-in-out;
+} */
+
+        /* 页面激活状态：回到原位+显示 */
+        /* html.page-active, body.page-active {
+    opacity: 1;
+    transform: translateX(0);
+} */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes pulse-soft {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        .animate-pulse-soft {
+            animation: pulse-soft 3s infinite;
+        }
+        /* 卡片hover动画 */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+            .card-hover:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.1), 0 8px 10px -6px rgba(79, 70, 229, 0.1);
+            }
+        /* 榜单切换淡入淡出动画 */
+        .rank-container {
+            transition: all 0.5s ease-in-out;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .rank-hidden {
+            opacity: 0;
+            visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans relative">
+    <!-- 顶部导航栏（页面跳转，当前排行榜激活） -->
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-lg">
+                    <span class="iconify text-white text-2xl" data-icon="heroicons:bolt-20-solid"></span>
+                </div>
+                <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">AI-Hub Market</span>
+            </div>
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-600">
+                <a href="index.html" class="hover:text-indigo-600 transition-colors">首页</a>
+                <a href="skill.html" class="hover:text-indigo-600 transition-colors">技能广场</a>
+                <a href="task.html" class="hover:text-indigo-600 transition-colors">任务中心</a>
+                <a href="rank.html" class="text-indigo-600">排行榜</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-xs text-slate-400 mr-2">2026年02月04日</div>
+                <button class="bg-slate-100 p-2 rounded-full text-slate-600 hover:bg-slate-200 transition-colors">
+                    <span class="iconify text-xl" data-icon="heroicons:bell"></span>
+                </button>
+                <img alt="User Avatar" class="w-8 h-8 rounded-full border border-slate-200" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/a0f08c2e1b2b4f6ebb974bc66179d867.jpg" />
+            </div>
+        </div>
+    </nav>
+
+        <!-- 排行榜顶部：榜单切换栏（实现内部切换） -->
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-8">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <h3 class="font-bold text-slate-800 text-lg">全平台榜单</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button id="btn-dev-rank" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm">
+                        开发者贡献总榜
+                    </button>
+                    <button id="btn-ai-rank" class="bg-slate-50 text-slate-700 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-100 transition-all">
+                        AI技能评分总榜
+                    </button>
+                    <button class="bg-slate-50 text-slate-700 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-100 transition-all">
+                        月度新星榜
+                    </button>
+                    <button class="bg-slate-50 text-slate-700 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-100 transition-all">
+                        团队协作榜
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 榜单容器：相对定位，承载两个切换榜单 -->
+        <div class="relative mb-8">
+            <!-- 榜单1：开发者贡献总榜（默认显示） -->
+            <div id="dev-rank" class="rank-container">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                    <!-- 榜单头部 -->
+                    <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-violet-50">
+                        <div class="flex items-center space-x-3">
+                            <span class="iconify text-amber-500 text-2xl" data-icon="heroicons:trophy-solid"></span>
+                            <h3 class="font-bold text-slate-800 text-lg">开发者贡献总榜（TOP 10）</h3>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="text-indigo-600 text-xs font-semibold hover:underline flex items-center gap-1">
+                                <span class="iconify text-sm" data-icon="heroicons:download-solid"></span>
+                                导出榜单数据
+                            </button>
+                            <button class="text-indigo-600 text-xs font-semibold hover:underline flex items-center gap-1">
+                                <span class="iconify text-sm" data-icon="heroicons:refresh-solid"></span>
+                                刷新榜单
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 榜单内容 -->
+                    <div class="p-2">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">
+                                    <th class="px-4 py-3 w-16">排位</th>
+                                    <th class="px-4 py-3">开发者信息</th>
+                                    <th class="px-4 py-3">总贡献值</th>
+                                    <th class="px-4 py-3">本月增量</th>
+                                    <th class="px-4 py-3">核心技能组</th>
+                                    <th class="px-4 py-3">排名变化</th>
+                                    <th class="px-4 py-3">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-slate-50">
+                                <!-- 排名1（特殊样式） -->
+                                <tr class="hover:bg-indigo-50/50 transition-colors card-hover bg-amber-50/30">
+                                    <td class="px-4 py-4 font-bold text-amber-600 text-lg">01</td>
+                                    <td class="px-4 py-4 flex items-center space-x-3">
+                                        <img alt="Dev 1" class="w-10 h-10 rounded-lg border-2 border-amber-400" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/2aa121ed4319448a874b5761129e2f98.jpg" />
+                                        <div>
+                                            <span class="font-medium text-slate-900">Dr. Neural</span>
+                                            <p class="text-xs text-slate-400">加入时间：2025-08-15</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4 text-indigo-600 font-bold text-lg">12,840</td>
+                                    <td class="px-4 py-4 text-emerald-600 font-medium">+2,150</td>
+                                    <td class="px-4 py-4">
+                                        <span class="bg-indigo-50 text-indigo-600 text-[10px] px-2 py-0.5 rounded-full font-bold mr-1">LLM-FineTuning</span>
+                                        <span class="bg-indigo-50 text-indigo-600 text-[10px] px-2 py-0.5 rounded-full font-bold">Prompt Engineering</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-slate-500 flex items-center gap-1">
+                                        <span class="iconify text-sm" data-icon="heroicons:arrow-up-right"></span>
+                                        <span>保持</span>
+                                    </td>
+                                    <td class="px-4 py-4 flex space-x-2">
+                                        <button class="text-indigo-600 hover:text-indigo-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:user-solid"></span></button>
+                                        <button class="text-slate-600 hover:text-slate-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:chart-bar-solid"></span></button>
+                                    </td>
+                                </tr>
+                                <!-- 排名2 -->
+                                <tr class="hover:bg-slate-50 transition-colors card-hover">
+                                    <td class="px-4 py-4 font-bold text-slate-400">02</td>
+                                    <td class="px-4 py-4 flex items-center space-x-3">
+                                        <img alt="Dev 2" class="w-10 h-10 rounded-lg border-2 border-slate-200" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/b1f7efdeea774c7093e0160b8375b154.jpg" />
+                                        <div>
+                                            <span class="font-medium text-slate-900">PixelMind</span>
+                                            <p class="text-xs text-slate-400">加入时间：2025-09-02</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4 text-indigo-600 font-bold">11,200</td>
+                                    <td class="px-4 py-4 text-emerald-600 font-medium">+1,890</td>
+                                    <td class="px-4 py-4">
+                                        <span class="bg-emerald-50 text-emerald-600 text-[10px] px-2 py-0.5 rounded-full font-bold mr-1">DiffusionArt</span>
+                                        <span class="bg-emerald-50 text-emerald-600 text-[10px] px-2 py-0.5 rounded-full font-bold">StableDiffusion</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-emerald-600 flex items-center gap-1">
+                                        <span class="iconify text-sm" data-icon="heroicons:arrow-up-solid"></span>
+                                        <span>+1</span>
+                                    </td>
+                                    <td class="px-4 py-4 flex space-x-2">
+                                        <button class="text-indigo-600 hover:text-indigo-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:user-solid"></span></button>
+                                        <button class="text-slate-600 hover:text-slate-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:chart-bar-solid"></span></button>
+                                    </td>
+                                </tr>
+                                <!-- 排名3 -->
+                                <tr class="hover:bg-slate-50 transition-colors card-hover">
+                                    <td class="px-4 py-4 font-bold text-slate-400">03</td>
+                                    <td class="px-4 py-4 flex items-center space-x-3">
+                                        <img alt="Dev 3" class="w-10 h-10 rounded-lg border-2 border-slate-200" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/e3395902005d4adabbfa6652ff0768b6.jpg" />
+                                        <div>
+                                            <span class="font-medium text-slate-900">CodeFlow</span>
+                                            <p class="text-xs text-slate-400">加入时间：2025-07-20</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4 text-indigo-600 font-bold">9,850</td>
+                                    <td class="px-4 py-4 text-emerald-600 font-medium">+1,200</td>
+                                    <td class="px-4 py-4">
+                                        <span class="bg-sky-50 text-sky-600 text-[10px] px-2 py-0.5 rounded-full font-bold mr-1">PyTorch</span>
+                                        <span class="bg-sky-50 text-sky-600 text-[10px] px-2 py-0.5 rounded-full font-bold">TensorFlow</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-rose-600 flex items-center gap-1">
+                                        <span class="iconify text-sm" data-icon="heroicons:arrow-down-solid"></span>
+                                        <span>-1</span>
+                                    </td>
+                                    <td class="px-4 py-4 flex space-x-2">
+                                        <button class="text-indigo-600 hover:text-indigo-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:user-solid"></span></button>
+                                        <button class="text-slate-600 hover:text-slate-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:chart-bar-solid"></span></button>
+                                    </td>
+                                </tr>
+                                <!-- 排名4 -->
+                                <tr class="hover:bg-slate-50 transition-colors card-hover">
+                                    <td class="px-4 py-4 font-bold text-slate-400">04</td>
+                                    <td class="px-4 py-4 flex items-center space-x-3">
+                                        <img alt="Dev 4" class="w-10 h-10 rounded-lg border-2 border-slate-200" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/a0f08c2e1b2b4f6ebb974bc66179d867.jpg" />
+                                        <div>
+                                            <span class="font-medium text-slate-900">DataMind</span>
+                                            <p class="text-xs text-slate-400">加入时间：2025-10-01</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4 text-indigo-600 font-bold">8,720</td>
+                                    <td class="px-4 py-4 text-emerald-600 font-medium">+950</td>
+                                    <td class="px-4 py-4">
+                                        <span class="bg-orange-50 text-orange-600 text-[10px] px-2 py-0.5 rounded-full font-bold">DataAnalysis</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-slate-500 flex items-center gap-1">
+                                        <span class="iconify text-sm" data-icon="heroicons:arrow-up-right"></span>
+                                        <span>保持</span>
+                                    </td>
+                                    <td class="px-4 py-4 flex space-x-2">
+                                        <button class="text-indigo-600 hover:text-indigo-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:user-solid"></span></button>
+                                        <button class="text-slate-600 hover:text-slate-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:chart-bar-solid"></span></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 榜单2：AI技能评分总榜（默认隐藏，新增完整内容） -->
+            <div id="ai-rank" class="rank-container rank-hidden">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                    <!-- 榜单头部 -->
+                    <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-rose-50 to-pink-50">
+                        <div class="flex items-center space-x-3">
+                            <span class="iconify text-rose-500 text-2xl" data-icon="heroicons:sparkles-solid"></span>
+                            <h3 class="font-bold text-slate-800 text-lg">AI技能评分总榜（TOP 10）</h3>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="text-indigo-600 text-xs font-semibold hover:underline flex items-center gap-1">
+                                <span class="iconify text-sm" data-icon="heroicons:download-solid"></span>
+                                导出榜单数据
+                            </button>
+                            <button class="text-indigo-600 text-xs font-semibold hover:underline flex items-center gap-1">
+                                <span class="iconify text-sm" data-icon="heroicons:refresh-solid"></span>
+                                刷新榜单
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 榜单内容 -->
+                    <div class="p-2">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">
+                                    <th class="px-4 py-3 w-16">排位</th>
+                                    <th class="px-4 py-3">技能模型信息</th>
+                                    <th class="px-4 py-3">平均评分</th>
+                                    <th class="px-4 py-3">响应速度</th>
+                                    <th class="px-4 py-3">本月使用量</th>
+                                    <th class="px-4 py-3">排名变化</th>
+                                    <th class="px-4 py-3">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-slate-50">
+                                <!-- 排名1（特殊样式，突出冠军） -->
+                                <tr class="hover:bg-rose-50/50 transition-colors card-hover bg-amber-50/30">
+                                    <td class="px-4 py-4 font-bold text-amber-600 text-lg">01</td>
+                                    <td class="px-4 py-4 flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-lg border-2 border-amber-400 bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                            <span class="iconify text-xl" data-icon="heroicons:eye-solid"></span>
+                                        </div>
+                                        <div>
+                                            <span class="font-medium text-slate-900 italic">Vision-Pro-X v3.2</span>
+                                            <p class="text-xs text-slate-400">上线时间：2026-01-01</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="flex text-amber-400 mb-1">
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                        </div>
+                                        <span class="text-indigo-600 font-bold text-lg">5.0</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-emerald-600 font-medium">420ms</td>
+                                    <td class="px-4 py-4 text-slate-900 font-medium">128,500次</td>
+                                    <td class="px-4 py-4 text-slate-500 flex items-center gap-1">
+                                        <span class="iconify text-sm" data-icon="heroicons:arrow-up-right"></span>
+                                        <span>保持</span>
+                                    </td>
+                                    <td class="px-4 py-4 flex space-x-2">
+                                        <button class="text-indigo-600 hover:text-indigo-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:document-text-solid"></span></button>
+                                        <button class="text-slate-600 hover:text-slate-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:star-solid"></span></button>
+                                    </td>
+                                </tr>
+                                <!-- 排名2 -->
+                                <tr class="hover:bg-slate-50 transition-colors card-hover">
+                                    <td class="px-4 py-4 font-bold text-slate-400">02</td>
+                                    <td class="px-4 py-4 flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-lg border-2 border-slate-200 bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                            <span class="iconify text-xl" data-icon="heroicons:mic-solid"></span>
+                                        </div>
+                                        <div>
+                                            <span class="font-medium text-slate-900 italic">Gen-Audio-v2.1</span>
+                                            <p class="text-xs text-slate-400">上线时间：2025-12-15</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="flex text-amber-400 mb-1">
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star-outline"></span>
+                                        </div>
+                                        <span class="text-indigo-600 font-bold">4.0</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-emerald-600 font-medium">890ms</td>
+                                    <td class="px-4 py-4 text-slate-900 font-medium">96,300次</td>
+                                    <td class="px-4 py-4 text-emerald-600 flex items-center gap-1">
+                                        <span class="iconify text-sm" data-icon="heroicons:arrow-up-solid"></span>
+                                        <span>+1</span>
+                                    </td>
+                                    <td class="px-4 py-4 flex space-x-2">
+                                        <button class="text-indigo-600 hover:text-indigo-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:document-text-solid"></span></button>
+                                        <button class="text-slate-600 hover:text-slate-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:star-solid"></span></button>
+                                    </td>
+                                </tr>
+                                <!-- 排名3 -->
+                                <tr class="hover:bg-slate-50 transition-colors card-hover">
+                                    <td class="px-4 py-4 font-bold text-slate-400">03</td>
+                                    <td class="px-4 py-4 flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-lg border-2 border-slate-200 bg-sky-50 flex items-center justify-center text-sky-600">
+                                            <span class="iconify text-xl" data-icon="heroicons:table-cells-solid"></span>
+                                        </div>
+                                        <div>
+                                            <span class="font-medium text-slate-900 italic">DataAnalyzer v4.0</span>
+                                            <p class="text-xs text-slate-400">上线时间：2025-11-30</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="flex text-amber-400 mb-1">
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star-half"></span>
+                                            <span class="iconify" data-icon="material-symbols:star-outline"></span>
+                                        </div>
+                                        <span class="text-indigo-600 font-bold">3.5</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-emerald-600 font-medium">1.2s</td>
+                                    <td class="px-4 py-4 text-slate-900 font-medium">78,900次</td>
+                                    <td class="px-4 py-4 text-rose-600 flex items-center gap-1">
+                                        <span class="iconify text-sm" data-icon="heroicons:arrow-down-solid"></span>
+                                        <span>-1</span>
+                                    </td>
+                                    <td class="px-4 py-4 flex space-x-2">
+                                        <button class="text-indigo-600 hover:text-indigo-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:document-text-solid"></span></button>
+                                        <button class="text-slate-600 hover:text-slate-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:star-solid"></span></button>
+                                    </td>
+                                </tr>
+                                <!-- 排名4 -->
+                                <tr class="hover:bg-slate-50 transition-colors card-hover">
+                                    <td class="px-4 py-4 font-bold text-slate-400">04</td>
+                                    <td class="px-4 py-4 flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-lg border-2 border-slate-200 bg-purple-50 flex items-center justify-center text-purple-600">
+                                            <span class="iconify text-xl" data-icon="heroicons:brush-solid"></span>
+                                        </div>
+                                        <div>
+                                            <span class="font-medium text-slate-900 italic">Diffusion-Art v5.1</span>
+                                            <p class="text-xs text-slate-400">上线时间：2026-01-10</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="flex text-amber-400 mb-1">
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star"></span>
+                                            <span class="iconify" data-icon="material-symbols:star-outline"></span>
+                                        </div>
+                                        <span class="text-indigo-600 font-bold">4.0</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-emerald-600 font-medium">2.5s</td>
+                                    <td class="px-4 py-4 text-slate-900 font-medium">65,400次</td>
+                                    <td class="px-4 py-4 text-slate-500 flex items-center gap-1">
+                                        <span class="iconify text-sm" data-icon="heroicons:arrow-up-right"></span>
+                                        <span>保持</span>
+                                    </td>
+                                    <td class="px-4 py-4 flex space-x-2">
+                                        <button class="text-indigo-600 hover:text-indigo-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:document-text-solid"></span></button>
+                                        <button class="text-slate-600 hover:text-slate-700 transition-colors"><span class="iconify text-sm" data-icon="heroicons:star-solid"></span></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 排行榜底部：月度新星榜 -->
+        <div class="bg-gradient-to-br from-violet-500 to-purple-700 p-6 rounded-3xl text-white shadow-lg relative overflow-hidden mb-12 card-hover">
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-lg">月度新星榜 · 2026年02月</h3>
+                    <span class="text-xs text-violet-100 bg-white/20 px-2 py-1 rounded-full">更新于 2026-02-04</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                        <p class="text-violet-100 text-xs mb-2">新星第一名</p>
+                        <div class="flex items-center space-x-3 mb-2">
+                            <img alt="New Dev 1" class="w-10 h-10 rounded-lg border-2 border-white/30" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/2aa121ed4319448a874b5761129e2f98.jpg" />
+                            <span class="font-bold">AI-Builder</span>
+                        </div>
+                        <p class="text-xs text-violet-100">贡献值：+3,200（本月）</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                        <p class="text-violet-100 text-xs mb-2">新星第二名</p>
+                        <div class="flex items-center space-x-3 mb-2">
+                            <img alt="New Dev 2" class="w-10 h-10 rounded-lg border-2 border-white/30" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/b1f7efdeea774c7093e0160b8375b154.jpg" />
+                            <span class="font-bold">Model-Maker</span>
+                        </div>
+                        <p class="text-xs text-violet-100">贡献值：+2,800（本月）</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                        <p class="text-violet-100 text-xs mb-2">新星第三名</p>
+                        <div class="flex items-center space-x-3 mb-2">
+                            <img alt="New Dev 3" class="w-10 h-10 rounded-lg border-2 border-white/30" src="https://modao.cc/agent-py/media/generated_images/2026-02-04/e3395902005d4adabbfa6652ff0768b6.jpg" />
+                            <span class="font-bold">Code-Master</span>
+                        </div>
+                        <p class="text-xs text-violet-100">贡献值：+2,500（本月）</p>
+                    </div>
+                </div>
+            </div>
+            <span class="iconify absolute -right-4 -bottom-4 text-white/10 text-8xl" data-icon="heroicons:sparkles-solid"></span>
+        </div>
+    </main>
+
+    <!-- 底部页脚 -->
+    <footer class="bg-white border-t border-slate-200 py-12">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="col-span-2">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="bg-slate-800 p-1.5 rounded-md">
+                        <span class="iconify text-white text-lg" data-icon="heroicons:bolt-20-solid"></span>
+                    </div>
+                    <span class="font-bold text-slate-800">AI-Hub Market</span>
+                </div>
+                <p class="text-slate-400 text-sm max-w-sm mb-6">下一代AI技能协作市场，构建人类与AI高度协同的生产力枢纽。</p>
+                <div class="flex space-x-4">
+                    <span class="iconify text-slate-400 hover:text-indigo-600 cursor-pointer text-xl" data-icon="brandico:twitter-bird"></span>
+                    <span class="iconify text-slate-400 hover:text-indigo-600 cursor-pointer text-xl" data-icon="brandico:github"></span>
+                    <span class="iconify text-slate-400 hover:text-indigo-600 cursor-pointer text-xl" data-icon="brandico:linkedin-rect"></span>
+                </div>
+            </div>
+            <div>
+                <h5 class="font-bold text-slate-800 mb-4">快速链接</h5>
+                <ul class="space-y-2 text-sm text-slate-500">
+                    <li class="hover:text-indigo-600 cursor-pointer">开发者文档</li>
+                    <li class="hover:text-indigo-600 cursor-pointer">合规协议</li>
+                    <li class="hover:text-indigo-600 cursor-pointer">社区准则</li>
+                </ul>
+            </div>
+            <div>
+                <h5 class="font-bold text-slate-800 mb-4">订阅更新</h5>
+                <div class="flex">
+                    <input class="bg-slate-50 border border-slate-200 rounded-l-lg px-4 py-2 w-full text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="输入邮箱" type="email" />
+                    <button class="bg-indigo-600 text-white px-4 py-2 rounded-r-lg hover:bg-indigo-700 transition-colors">
+                        <span class="iconify" data-icon="heroicons:paper-airplane"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-100 flex justify-between text-[11px] text-slate-400">
+            <p>© 2026 AI-Hub Market. All rights reserved. 当前时间: 2026-02-04 14:30</p>
+            <div class="flex space-x-4">
+                <span>隐私权政策</span>
+                <span>服务条款</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 榜单切换逻辑脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    // 原有代码（如下拉菜单、搜索功能）保留，新增以下内容
+    
+    // 1. 页面加载完成后，延迟10毫秒触发入场动画（确保DOM渲染完成，避免动画失效）
+    setTimeout(() => {
+        document.documentElement.classList.add('page-active');
+        document.body.classList.add('page-active');
+    }, 10);
+
+    // 2. 给所有导航链接添加点击事件：先播放退场动画，再跳转新页面
+    const navLinks = document.querySelectorAll('nav a'); // 获取所有导航链接
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            // 阻止链接默认跳转行为
+            e.preventDefault();
+            const targetHref = this.getAttribute('href'); // 获取目标页面地址（如skill.html）
+
+            // 3. 播放当前页面的退场动画（移除page-active类，触发CSS的transition）
+            document.documentElement.classList.remove('page-active');
+            document.body.classList.remove('page-active');
+
+            // 4. 延迟300毫秒（和CSS动画时长一致），再跳转到目标页面
+            setTimeout(() => {
+                window.location.href = targetHref;
+            }, 150);
+        });
+    });
+});
+        document.addEventListener('DOMContentLoaded', function() {
+        // 1. 获取元素
+        const btnDevRank = document.getElementById('btn-dev-rank');
+        const btnAiRank = document.getElementById('btn-ai-rank');
+        const devRank = document.getElementById('dev-rank');
+        const aiRank = document.getElementById('ai-rank');
+
+        // 2. 重置榜单状态函数
+        function resetRankState() {
+        // 隐藏所有榜单
+        devRank.classList.add('rank-hidden');
+        aiRank.classList.add('rank-hidden');
+        // 重置按钮样式
+        btnDevRank.classList.remove('bg-indigo-600', 'text-white');
+        btnDevRank.classList.add('bg-slate-50', 'text-slate-700');
+        btnAiRank.classList.remove('bg-indigo-600', 'text-white');
+        btnAiRank.classList.add('bg-slate-50', 'text-slate-700');
+        }
+
+        // 3. 切换到开发者贡献榜
+        function showDevRank() {
+        resetRankState();
+        devRank.classList.remove('rank-hidden');
+        btnDevRank.classList.remove('bg-slate-50', 'text-slate-700');
+        btnDevRank.classList.add('bg-indigo-600', 'text-white');
+        }
+
+        // 4. 切换到AI技能评分榜
+        function showAiRank() {
+        resetRankState();
+        aiRank.classList.remove('rank-hidden');
+        btnAiRank.classList.remove('bg-slate-50', 'text-slate-700');
+        btnAiRank.classList.add('bg-indigo-600', 'text-white');
+        }
+
+        // 5. 绑定点击事件
+        btnDevRank.addEventListener('click', showDevRank);
+        btnAiRank.addEventListener('click', showAiRank);
+
+        // 6. 初始默认显示开发者贡献榜
+        showDevRank();
+        });
+    </script>
+</body>
+</html>
